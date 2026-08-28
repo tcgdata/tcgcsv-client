@@ -1,5 +1,4 @@
 import { TCG_PLAYER_CATEGORY_ID, TCGCSVClient } from '../../src';
-import { faker } from '@faker-js/faker';
 
 describe('Client', () => {
   const POKEMON_CROWN_ZENITH_GALARIAN_GALLERY_GROUP_ID = 17689;
