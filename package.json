@@ -1,0 +1,40 @@
+{
+  "name": "@tcgdata/tcgcsv-client",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc && tsdown",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --max-warnings=0 --fix",
+    "prettier": "npx prettier -c .",
+    "prettier:fix": "npx prettier:fix -c .",
+    "test": "vitest run --project unit --coverage",
+    "test:integration": "vitest run --project integration"
+  },
+  "include": [
+    "dist"
+  ],
+  "dependencies": {
+    "7z-wasm": "^1.2.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^1.0.0",
+    "@changesets/cli": "^3.0.1",
+    "@eslint/js": "^10.0.1",
+    "@faker-js/faker": "^10.6.0",
+    "@types/node": "^26.4.0",
+    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/eslint-plugin": "^1.6.27",
+    "eslint": "^10.9.1",
+    "msw": "^2.15.0",
+    "prettier": "^3.9.6",
+    "tsdown": "^0.22.14",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.68.0",
+    "vitest": "^4.1.11"
+  }
+}

@@ -1,0 +1,136 @@
+import SevenZip, { SevenZipModule } from '7z-wasm';
+import SevenZipWasm from '7z-wasm/7zz.wasm';
+import {
+  createListResponseSchema,
+  ListResponse,
+  ProductPrice,
+  ProductPriceSchema,
+} from '../schemas';
+import {
+  HistoricalProductPricesBulkGetPricesProps,
+  HistoricalProductPricesBulkGetPricesResult,
+} from './HistoricalProductPrices.types';
+import { isValidId } from '../utils';
+
+export class HistoricalProductPrices {
+  #filePrefix: string;
+  #data: Uint8Array<ArrayBuffer>;
+
+  public constructor(filePrefix: string, data: Uint8Array<ArrayBuffer>) {
+    this.#filePrefix = filePrefix;
+    this.#data = data;
+  }
+
+  public async getGroups(): Promise<Array<{ categoryId: number; groupId: number }>> {
+    const groups: Array<{ categoryId: number; groupId: number }> = [];
+    const pattern = /\/(?<categoryId>\d+)\/(?<groupId>\d+)\/prices$/;
+    const archive = await this.#getArchive({
+      output: (string: string) => {
+        const matches = string.match(pattern);
+
+        if (matches?.groups) {
+          const { categoryId, groupId } = matches.groups;
+          groups.push({
+            categoryId: Number(categoryId),
+            groupId: Number(groupId),
+          });
+        }
+      },
+    });
+
+    archive.callMain(['l', '-ba', 'archive.7z']);
+
+    return groups;
+  }
+
+  public async getPrices(categoryId: number, groupId: number): Promise<ListResponse<ProductPrice>> {
+    const result = this.bulkGetPrices({
+      groups: [{ categoryId, groupId }],
+    });
+
+    const { value } = await result.next();
+
+    if (!value || !value.prices) {
+      throw new Error(`Prices do not exist for group "${groupId}" in category "${categoryId}".`);
+    }
+
+    return value.prices;
+  }
+
+  public async *bulkGetPrices({
+    groups,
+    batchSize = 1_000,
+  }: HistoricalProductPricesBulkGetPricesProps): AsyncGenerator<
+    HistoricalProductPricesBulkGetPricesResult,
+    void,
+    unknown
+  > {
+    const uniqueGroups: Record<string, { categoryId: number; groupId: number }> = {};
+    let archive: SevenZipModule | undefined;
+
+    groups.forEach(({ categoryId, groupId }) => {
+      if (!isValidId(categoryId)) {
+        throw new Error(`Category "${categoryId}" is invalid, must be a positive integer.`);
+      } else if (!isValidId(groupId)) {
+        throw new Error(`Group "${groupId}" is invalid, must be a positive integer.`);
+      }
+
+      uniqueGroups[`${categoryId}/${groupId}`] = { categoryId, groupId };
+    });
+
+    const queue = Object.values(uniqueGroups);
+
+    while (queue.length > 0) {
+      const batch = queue.splice(0, batchSize);
+      const extractedFiles = batch.map(
+        ({ categoryId, groupId }) => `${this.#filePrefix}/${categoryId}/${groupId}/prices`
+      );
+
+      archive = await this.#getArchive();
+      archive.callMain(['x', 'archive.7z', ...Object.values(extractedFiles)]);
+
+      const decoder = new TextDecoder();
+
+      for (const { categoryId, groupId } of batch) {
+        const pricesPath = `${this.#filePrefix}/${categoryId}/${groupId}/prices`;
+
+        try {
+          const prices = JSON.parse(decoder.decode(archive.FS.readFile(pricesPath)));
+          archive.FS.unlink(pricesPath);
+
+          yield {
+            categoryId,
+            groupId,
+            prices: createListResponseSchema(ProductPriceSchema).parse(prices),
+          };
+        } catch {
+          // Invalid category/group ID combination
+          yield {
+            categoryId,
+            groupId,
+            prices: undefined,
+          };
+        }
+      }
+    }
+  }
+
+  async #getArchive({
+    output,
+  }: { output?: (string: string) => void } = {}): Promise<SevenZipModule> {
+    const archive = await SevenZip({
+      print: output || (() => {}),
+      // @ts-expect-error Control how wasm file gets loaded
+      instantiateWasm: async (
+        info: WebAssembly.Imports | undefined,
+        callback: (module: unknown, instance: unknown) => void
+      ): Promise<void> => {
+        callback(await WebAssembly.instantiate(SevenZipWasm, info), SevenZipWasm);
+      },
+    });
+    const stream = archive.FS.open('archive.7z', 'w');
+    archive.FS.write(stream, this.#data, 0, this.#data.length);
+    archive.FS.close(stream);
+    return archive;
+  }
+}

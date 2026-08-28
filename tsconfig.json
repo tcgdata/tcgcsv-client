@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "target": "es2024",
+    "types": ["node", "vitest/globals"],
+    "declaration": true,
+    "noEmit": true
+  },
+  "includes": ["src/*"],
+  "exclude": ["build.ts"]
+}
