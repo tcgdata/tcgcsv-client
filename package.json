@@ -5,6 +5,9 @@
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",
   "sideEffects": false,
+  "repository": {
+    "url": "https://github.com/tcgdata/tcgcsv-client"
+  },
   "publishConfig": {
     "access": "public"
   },
