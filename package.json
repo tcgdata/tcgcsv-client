@@ -5,6 +5,9 @@
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc && tsdown",
     "lint": "eslint . --max-warnings=0",
