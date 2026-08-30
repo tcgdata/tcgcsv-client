@@ -1,4 +1,7 @@
-# tcgcsv-client
+# @tcgdata/tcgcsv-client
+
+![NPM Version](https://img.shields.io/npm/v/%40tcgdata%2Ftcgcsv-client)
+![CI](https://github.com/tcgdata/tcgcsv-client/actions/workflows/ci.yml/badge.svg)
 
 A strongly typed JS client library for fetching data from https://tcgcsv.com/
 

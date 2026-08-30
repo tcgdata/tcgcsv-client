@@ -8,4 +8,10 @@ export {
   type ProductPresaleInfo,
   type ProductPrice,
 } from './schemas';
-export { TCGCSVClient, type TCGCSVClientProps } from './client';
+export { HistoricalProductPrices } from './model/HistoricalProductPrices';
+export {
+  TCGCSVClient,
+  type TCGCSVClientProps,
+  type TCGCSVHistoricalProductPricesArchive,
+} from './client';
+export { HTTPError, ValidationError } from './error';

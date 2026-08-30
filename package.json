@@ -4,6 +4,12 @@
   "type": "module",
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
   "sideEffects": false,
   "repository": {
     "url": "https://github.com/tcgdata/tcgcsv-client"
@@ -16,11 +22,11 @@
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --max-warnings=0 --fix",
     "prettier": "npx prettier -c .",
-    "prettier:fix": "npx prettier:fix -c .",
+    "prettier:fix": "npx prettier -w .",
     "test": "vitest run --project unit --coverage",
     "test:integration": "vitest run --project integration"
   },
-  "include": [
+  "files": [
     "dist"
   ],
   "dependencies": {

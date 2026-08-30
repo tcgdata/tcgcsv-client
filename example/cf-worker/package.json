@@ -1,0 +1,25 @@
+{
+  "name": "@tcgdata/tcgcsv-proxy",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "scripts": {
+    "build": "tsx build.ts",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "test": "vitest",
+    "cf-typegen": "wrangler types"
+  },
+  "devDependencies": {
+    "@tcgdata/tcgcsv-client": "file:../..",
+    "@types/node": "^26.4.0",
+    "esbuild": "^0.28.2",
+    "hono": "^4.13.5",
+    "tsx": "^4.23.13",
+    "typescript": "^5.5.2",
+    "wrangler": "^4.127.1"
+  }
+}
