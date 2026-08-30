@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TCGCSVClientProps } from './TCGCSVClient.props';
+import { TCGCSVClientProps, TCGCSVHistoricalProductPricesArchive } from './TCGCSVClient.types';
 import {
   Category,
   CategorySchema,
@@ -14,6 +14,7 @@ import {
 } from '../schemas';
 import { HistoricalProductPrices } from '../model';
 import { isValidId, isValidIsoDate } from '../utils';
+import { HTTPError, ValidationError } from '../error';
 
 export class TCGCSVClient {
   #props: Required<TCGCSVClientProps>;
@@ -31,7 +32,7 @@ export class TCGCSVClient {
 
   public async getGroups(categoryId: number): Promise<ListResponse<Group>> {
     if (!isValidId(categoryId)) {
-      throw new Error(`Category "${categoryId}" is invalid, must be a positive integer.`);
+      throw new ValidationError(`Category "${categoryId}" is invalid, must be a positive integer.`);
     }
 
     return this.#requestAndParse(
@@ -42,9 +43,9 @@ export class TCGCSVClient {
 
   public async getProducts(categoryId: number, groupId: number): Promise<ListResponse<Product>> {
     if (!isValidId(categoryId)) {
-      throw new Error(`Category "${categoryId}" is invalid, must be a positive integer.`);
+      throw new ValidationError(`Category "${categoryId}" is invalid, must be a positive integer.`);
     } else if (!isValidId(groupId)) {
-      throw new Error(`Group "${groupId}" is invalid, must be a positive integer.`);
+      throw new ValidationError(`Group "${groupId}" is invalid, must be a positive integer.`);
     }
 
     return this.#requestAndParse(
@@ -58,9 +59,9 @@ export class TCGCSVClient {
     groupId: number
   ): Promise<ListResponse<ProductPrice>> {
     if (!isValidId(categoryId)) {
-      throw new Error(`Category "${categoryId}" is invalid, must be a positive integer.`);
+      throw new ValidationError(`Category "${categoryId}" is invalid, must be a positive integer.`);
     } else if (!isValidId(groupId)) {
-      throw new Error(`Group "${groupId}" is invalid, must be a positive integer.`);
+      throw new ValidationError(`Group "${groupId}" is invalid, must be a positive integer.`);
     }
 
     return this.#requestAndParse(
@@ -69,18 +70,53 @@ export class TCGCSVClient {
     );
   }
 
-  public async getHistoricalProductPrices(date: string): Promise<HistoricalProductPrices> {
+  public async getHistoricalProductPricesArchive(
+    date: string
+  ): Promise<TCGCSVHistoricalProductPricesArchive> {
     if (!isValidIsoDate(date)) {
-      throw new Error(`Date "${date}" is invalid, must be a valid ISO date.`);
+      throw new ValidationError(`Date "${date}" is invalid, must be a valid ISO date.`);
     }
 
-    const response = await this.#request(`/archive/tcgplayer/prices-${date}.ppmd.7z`);
+    const fileName = `prices-${date}.ppmd.7z`;
+    const response = await this.#request(`/archive/tcgplayer/${fileName}`);
 
     if (!response.body) {
       throw new Error('No response body was returned.');
     }
 
-    return new HistoricalProductPrices(date, await response.bytes());
+    return {
+      date,
+      archive: response.body,
+      fileName,
+    };
+  }
+
+  public async getHistoricalProductPrices(date: string): Promise<HistoricalProductPrices> {
+    const { archive: stream } = await this.getHistoricalProductPricesArchive(date);
+    const reader = stream.getReader();
+    const chunks = [];
+    let totalLength = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      chunks.push(value);
+      totalLength += value.length;
+    }
+
+    const archive = new Uint8Array(totalLength);
+    let offset = 0;
+
+    for (const chunk of chunks) {
+      archive.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    return new HistoricalProductPrices(date, archive);
   }
 
   public async getLastUpdated(): Promise<Date> {
@@ -89,7 +125,9 @@ export class TCGCSVClient {
     const date = new Date(responseBody);
 
     if (!responseBody || isNaN(date.getTime())) {
-      throw new Error(`Invalid last updated time "${responseBody}" returned from TCGCSV.`);
+      throw new ValidationError(
+        `Invalid last updated time "${responseBody}" returned from TCGCSV.`
+      );
     }
 
     return date;
@@ -110,8 +148,9 @@ export class TCGCSVClient {
     });
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to fetch "${resolvedUrl}", received status ${response.status}: ${await response.text()}`
+      throw new HTTPError(
+        `Failed to fetch "${resolvedUrl}", received status ${response.status}: ${await response.clone().text()}`,
+        { response }
       );
     }
 

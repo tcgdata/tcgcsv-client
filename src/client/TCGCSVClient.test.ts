@@ -229,6 +229,29 @@ describe('TCGCSVClient', () => {
     });
   });
 
+  describe('getHistoricalProductPricesArchive', () => {
+    test('Returns a stream with the historical prices archive', async () => {
+      const date = '2026-07-01';
+      const archive = await fs.readFile(
+        path.resolve(import.meta.dirname, '..', 'model', 'fixtures', `prices-${date}.ppmd.7z`)
+      );
+      const archiveArray = new Uint8Array(archive.buffer, archive.byteOffset, archive.byteLength);
+
+      server.use(
+        http.get(`https://tcgcsv.com/archive/tcgplayer/prices-${date}.ppmd.7z`, () =>
+          HttpResponse.arrayBuffer(archiveArray.buffer)
+        )
+      );
+
+      const result = await client.getHistoricalProductPricesArchive(date);
+      expect(result).toStrictEqual({
+        archive: expect.any(ReadableStream),
+        date,
+        fileName: 'prices-2026-07-01.ppmd.7z',
+      });
+    });
+  });
+
   describe('getHistoricalProductPrices', () => {
     test('Returns historical product prices', async () => {
       const date = '2026-07-01';

@@ -7,6 +7,5 @@
     "declaration": true,
     "noEmit": true
   },
-  "includes": ["src/*"],
-  "exclude": ["build.ts"]
+  "include": ["src/**/*.ts"]
 }

@@ -11,12 +11,13 @@ import {
   HistoricalProductPricesBulkGetPricesResult,
 } from './HistoricalProductPrices.types';
 import { isValidId } from '../utils';
+import { ValidationError } from '../error';
 
 export class HistoricalProductPrices {
   #filePrefix: string;
-  #data: Uint8Array<ArrayBuffer>;
+  #data: Uint8Array<ArrayBufferLike>;
 
-  public constructor(filePrefix: string, data: Uint8Array<ArrayBuffer>) {
+  public constructor(filePrefix: string, data: Uint8Array<ArrayBufferLike>) {
     this.#filePrefix = filePrefix;
     this.#data = data;
   }
@@ -51,7 +52,9 @@ export class HistoricalProductPrices {
     const { value } = await result.next();
 
     if (!value || !value.prices) {
-      throw new Error(`Prices do not exist for group "${groupId}" in category "${categoryId}".`);
+      throw new ValidationError(
+        `Prices do not exist for group "${groupId}" in category "${categoryId}".`
+      );
     }
 
     return value.prices;
@@ -70,9 +73,11 @@ export class HistoricalProductPrices {
 
     groups.forEach(({ categoryId, groupId }) => {
       if (!isValidId(categoryId)) {
-        throw new Error(`Category "${categoryId}" is invalid, must be a positive integer.`);
+        throw new ValidationError(
+          `Category "${categoryId}" is invalid, must be a positive integer.`
+        );
       } else if (!isValidId(groupId)) {
-        throw new Error(`Group "${groupId}" is invalid, must be a positive integer.`);
+        throw new ValidationError(`Group "${groupId}" is invalid, must be a positive integer.`);
       }
 
       uniqueGroups[`${categoryId}/${groupId}`] = { categoryId, groupId };

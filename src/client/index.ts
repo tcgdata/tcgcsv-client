@@ -1,2 +1,2 @@
 export * from './TCGCSVClient';
-export * from './TCGCSVClient.props';
+export * from './TCGCSVClient.types';

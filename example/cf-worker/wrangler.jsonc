@@ -1,0 +1,29 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tcgcsv-proxy",
+  "main": "dist/index.js",
+  "compatibility_date": "2026-08-29",
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": false,
+    },
+  },
+  "upload_source_maps": true,
+  "compatibility_flags": ["nodejs_compat"],
+  "cache": {
+    "enabled": true,
+  },
+  "exports": {
+    "default": { "type": "worker", "cache": { "enabled": false } },
+    "ArchiveExtractor": { "type": "worker", "cache": { "enabled": true } },
+    "Proxy": { "type": "worker", "cache": { "enabled": true } },
+  },
+  "build": {
+    "command": "npm run build",
+  },
+}

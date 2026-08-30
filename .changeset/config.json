@@ -9,7 +9,7 @@
       "repo": "tcgdata/tcgcsv-client"
     }
   ],
-  "commit": true,
+  "commit": false,
   "ignore": [],
   "fixed": [],
   "linked": [],
