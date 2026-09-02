@@ -9,8 +9,7 @@ This library is not affiliated or endorsed by CptSpaceToaster (the maintainer of
 
 ## Requirements
 
-- Historical prices are compressed in 7z format. [7z-wasm](https://github.com/use-strict/7z-wasm/tree/master) is used
-  to decompress these. You need to ensure the wasm is bundled/can be loaded if fetching historical data.
+- Historical prices are compressed in 7z format.
 
 ## Notes
 
@@ -29,7 +28,11 @@ npm i @tcgdata/tcgcsv-client
 ## Usage
 
 ```ts
-import { TCGCSVClient, TCG_PLAYER_CATEGORY_ID } from '@tcgdata/tcgscv-client';
+import {
+  HistoricalProductPrices,
+  TCGCSVClient,
+  TCG_PLAYER_CATEGORY_ID,
+} from '@tcgdata/tcgscv-client';
 
 // Create client object
 const client = new TCGCSVClient({
@@ -212,8 +215,9 @@ const prices = await client.getProductPrices(
 //     ...
 // ]
 // }
-const allHistoricalPrices = await client.getHistoricalProductPrices('2025-01-01');
-const historicalPrices = await allHistoricalPrices.getPrices(
+const { archive, date } = await client.getHistoricalProductPricesArchive('2025-01-01');
+const model = await HistoricalProductPrices.create(archive, date);
+const historicalPrices = await model.getPrices(
   TCG_PLAYER_CATEGORY_ID.POKEMON,
   17689 // SWSH: Crown Zenith: Galarian Gallery
 );

@@ -15,6 +15,7 @@ export default defineConfig([
     plugins: {
       vitest,
     },
+    ignores: ['src/7z/*'],
     extends: [js.configs.recommended, tseslint.configs.recommended],
     rules: {
       ...vitest.configs.recommended.rules,

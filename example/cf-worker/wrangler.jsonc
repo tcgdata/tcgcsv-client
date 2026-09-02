@@ -23,7 +23,4 @@
     "ArchiveExtractor": { "type": "worker", "cache": { "enabled": true } },
     "Proxy": { "type": "worker", "cache": { "enabled": true } },
   },
-  "build": {
-    "command": "npm run build",
-  },
 }

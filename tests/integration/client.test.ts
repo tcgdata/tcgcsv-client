@@ -1,4 +1,4 @@
-import { TCG_PLAYER_CATEGORY_ID, TCGCSVClient } from '../../src';
+import { HistoricalProductPrices, TCG_PLAYER_CATEGORY_ID, TCGCSVClient } from '../../src';
 
 describe('Client', () => {
   const POKEMON_CROWN_ZENITH_GALARIAN_GALLERY_GROUP_ID = 17689;
@@ -87,7 +87,8 @@ describe('Client', () => {
 
   describe('getHistoricalProductPrices', () => {
     test('Returns a 7z stream which can be decompressed to extract prices', async () => {
-      const historicalPrices = await client.getHistoricalProductPrices('2025-01-01');
+      const { archive, date } = await client.getHistoricalProductPricesArchive('2025-01-01');
+      const historicalPrices = await HistoricalProductPrices.create(archive, date);
       const prices = await historicalPrices.getPrices(
         TCG_PLAYER_CATEGORY_ID.POKEMON,
         POKEMON_CROWN_ZENITH_GALARIAN_GALLERY_GROUP_ID
