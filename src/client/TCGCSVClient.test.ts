@@ -4,7 +4,6 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { faker } from '@faker-js/faker';
 import { TCGCSVClient } from './TCGCSVClient';
-import { TCG_PLAYER_CATEGORY_ID } from '../constants';
 
 describe('TCGCSVClient', () => {
   const server = setupServer();
@@ -249,60 +248,6 @@ describe('TCGCSVClient', () => {
         date,
         fileName: 'prices-2026-07-01.ppmd.7z',
       });
-    });
-  });
-
-  describe('getHistoricalProductPrices', () => {
-    test('Returns historical product prices', async () => {
-      const date = '2026-07-01';
-      const archive = await fs.readFile(
-        path.resolve(import.meta.dirname, '..', 'model', 'fixtures', `prices-${date}.ppmd.7z`)
-      );
-      const archiveArray = new Uint8Array(archive.buffer, archive.byteOffset, archive.byteLength);
-
-      server.use(
-        http.get(`https://tcgcsv.com/archive/tcgplayer/prices-${date}.ppmd.7z`, () =>
-          HttpResponse.arrayBuffer(archiveArray.buffer)
-        )
-      );
-
-      const allPrices = await client.getHistoricalProductPrices(date);
-      const prices = await allPrices.getPrices(TCG_PLAYER_CATEGORY_ID.POKEMON, 604); // Base Set
-      expect(prices).toStrictEqual({
-        success: true,
-        errors: [],
-        results: expect.arrayContaining([
-          {
-            directLowPrice: 685.49,
-            highPrice: 1500,
-            lowPrice: 534.99,
-            marketPrice: 694.08,
-            midPrice: 700.52,
-            productId: 42382,
-            subTypeName: 'Holofoil',
-          },
-        ]),
-      });
-    });
-
-    test('Throws if attempting to query prices for an invalidate date', async () => {
-      await expect(client.getHistoricalProductPrices('not/a/date')).rejects.toThrow(
-        'Date "not/a/date" is invalid, must be a valid ISO date.'
-      );
-    });
-
-    test('Throws if no response body is returned', async () => {
-      const date = faker.date.past().toISOString().split('T')[0];
-
-      server.use(
-        http.get(`https://tcgcsv.com/archive/tcgplayer/prices-${date}.ppmd.7z`, () =>
-          HttpResponse.text(null, { status: 204 })
-        )
-      );
-
-      await expect(client.getHistoricalProductPrices(date)).rejects.toThrow(
-        'No response body was returned.'
-      );
     });
   });
 

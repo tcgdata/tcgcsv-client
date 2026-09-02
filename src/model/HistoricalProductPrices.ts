@@ -1,5 +1,4 @@
-import SevenZip, { SevenZipModule } from '7z-wasm';
-import SevenZipWasm from '7z-wasm/7zz.wasm';
+import SevenZip from '../7z';
 import {
   createListResponseSchema,
   ListResponse,
@@ -14,10 +13,10 @@ import { isValidId } from '../utils';
 import { ValidationError } from '../error';
 
 export class HistoricalProductPrices {
-  #filePrefix: string;
-  #data: Uint8Array<ArrayBufferLike>;
+  readonly #filePrefix: string;
+  readonly #data: Uint8Array<ArrayBufferLike>;
 
-  public constructor(filePrefix: string, data: Uint8Array<ArrayBufferLike>) {
+  private constructor(filePrefix: string, data: Uint8Array<ArrayBufferLike>) {
     this.#filePrefix = filePrefix;
     this.#data = data;
   }
@@ -69,7 +68,6 @@ export class HistoricalProductPrices {
     unknown
   > {
     const uniqueGroups: Record<string, { categoryId: number; groupId: number }> = {};
-    let archive: SevenZipModule | undefined;
 
     groups.forEach(({ categoryId, groupId }) => {
       if (!isValidId(categoryId)) {
@@ -91,7 +89,7 @@ export class HistoricalProductPrices {
         ({ categoryId, groupId }) => `${this.#filePrefix}/${categoryId}/${groupId}/prices`
       );
 
-      archive = await this.#getArchive();
+      const archive = await this.#getArchive();
       archive.callMain(['x', 'archive.7z', ...Object.values(extractedFiles)]);
 
       const decoder = new TextDecoder();
@@ -120,22 +118,52 @@ export class HistoricalProductPrices {
     }
   }
 
-  async #getArchive({
-    output,
-  }: { output?: (string: string) => void } = {}): Promise<SevenZipModule> {
+  async #getArchive({ output }: { output?: (string: string) => void } = {}): Promise<
+    ReturnType<typeof SevenZip>
+  > {
     const archive = await SevenZip({
       print: output || (() => {}),
-      // @ts-expect-error Control how wasm file gets loaded
-      instantiateWasm: async (
-        info: WebAssembly.Imports | undefined,
-        callback: (module: unknown, instance: unknown) => void
-      ): Promise<void> => {
-        callback(await WebAssembly.instantiate(SevenZipWasm, info), SevenZipWasm);
-      },
     });
-    const stream = archive.FS.open('archive.7z', 'w');
-    archive.FS.write(stream, this.#data, 0, this.#data.length);
-    archive.FS.close(stream);
+    // const stream = archive.FS.open('archive.7z', 'w');
+    // archive.FS.write(stream, this.#data, 0, this.#data.length);
+    // archive.FS.close(stream);
+    archive.FS.writeFile('archive.7z', this.#data);
     return archive;
+  }
+
+  public static async create(
+    archive: ReadableStream | Uint8Array,
+    date: string
+  ): Promise<HistoricalProductPrices> {
+    let data: Uint8Array;
+
+    if (archive instanceof Uint8Array) {
+      data = archive;
+    } else {
+      const reader = archive.getReader();
+      const chunks = [];
+      let totalLength = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        chunks.push(value);
+        totalLength += value.length;
+      }
+
+      let offset = 0;
+      data = new Uint8Array(totalLength);
+
+      for (const chunk of chunks) {
+        data.set(chunk, offset);
+        offset += chunk.length;
+      }
+    }
+
+    return new HistoricalProductPrices(date, data);
   }
 }

@@ -1,0 +1,10 @@
+#!/bin/bash -e
+
+cd "$(dirname "$0")"
+docker build --force-rm -t 7z-build .
+docker run --rm -v $PWD:/app -w /app --env-file build-es6.env 7z-build bash -e build-in-docker
+
+OUT_DIR="../../src/7z"
+mkdir -p "${OUT_DIR}"
+mv -f 7zz.js "${OUT_DIR}/index.js"
+mv -f 7zz.d.ts "${OUT_DIR}/index.d.ts"

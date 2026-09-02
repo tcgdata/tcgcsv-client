@@ -12,7 +12,6 @@ import {
   ProductPriceSchema,
   ProductSchema,
 } from '../schemas';
-import { HistoricalProductPrices } from '../model';
 import { isValidId, isValidIsoDate } from '../utils';
 import { HTTPError, ValidationError } from '../error';
 
@@ -89,34 +88,6 @@ export class TCGCSVClient {
       archive: response.body,
       fileName,
     };
-  }
-
-  public async getHistoricalProductPrices(date: string): Promise<HistoricalProductPrices> {
-    const { archive: stream } = await this.getHistoricalProductPricesArchive(date);
-    const reader = stream.getReader();
-    const chunks = [];
-    let totalLength = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-
-      if (done) {
-        break;
-      }
-
-      chunks.push(value);
-      totalLength += value.length;
-    }
-
-    const archive = new Uint8Array(totalLength);
-    let offset = 0;
-
-    for (const chunk of chunks) {
-      archive.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    return new HistoricalProductPrices(date, archive);
   }
 
   public async getLastUpdated(): Promise<Date> {

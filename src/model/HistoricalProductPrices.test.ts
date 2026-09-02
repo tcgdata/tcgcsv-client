@@ -1,5 +1,7 @@
-import * as fs from 'node:fs/promises';
+import * as fsp from 'node:fs/promises';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { Readable } from 'node:stream';
 import { faker } from '@faker-js/faker';
 import { HistoricalProductPrices } from './HistoricalProductPrices';
 import { TCG_PLAYER_CATEGORY_ID } from '../constants';
@@ -14,11 +16,11 @@ describe('HistoricalProductPrices', () => {
   let model: HistoricalProductPrices;
 
   beforeEach(async () => {
-    const archive = await fs.readFile(
+    const archive = await fsp.readFile(
       path.join(import.meta.dirname, 'fixtures/prices-2026-07-01.ppmd.7z')
     );
 
-    model = new HistoricalProductPrices('2026-07-01', archive);
+    model = await HistoricalProductPrices.create(archive, '2026-07-01');
   });
 
   describe('getPrices', () => {
@@ -173,6 +175,33 @@ describe('HistoricalProductPrices', () => {
       await expect(generator.next()).rejects.toThrow(
         `Group "${groupId}" is invalid, must be a positive integer.`
       );
+    });
+  });
+
+  describe('create', () => {
+    test('Create from response stream', async () => {
+      const date = '2026-07-01';
+      const stream = Readable.toWeb(
+        fs.createReadStream(path.resolve(import.meta.dirname, 'fixtures', `prices-${date}.ppmd.7z`))
+      ) as ReadableStream;
+
+      const allPrices = await HistoricalProductPrices.create(stream, date);
+      const prices = await allPrices.getPrices(TCG_PLAYER_CATEGORY_ID.POKEMON, 604); // Base Set
+      expect(prices).toStrictEqual({
+        success: true,
+        errors: [],
+        results: expect.arrayContaining([
+          {
+            directLowPrice: 685.49,
+            highPrice: 1500,
+            lowPrice: 534.99,
+            marketPrice: 694.08,
+            midPrice: 700.52,
+            productId: 42382,
+            subTypeName: 'Holofoil',
+          },
+        ]),
+      });
     });
   });
 });
