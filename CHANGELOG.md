@@ -1,5 +1,11 @@
 # @tcgdata/tcgcsv-client
 
+## 0.4.0
+
+### Minor Changes
+
+- [#6](https://github.com/tcgdata/tcgcsv-client/pull/6) [`faa5c83`](https://github.com/tcgdata/tcgcsv-client/commit/faa5c83fdb757e4e59b24d887bce9aa63b8554a3) Thanks [@raing3](https://github.com/raing3)! - Added custom 7z build which embeds the wasm in js to avoid complexities in loading it it. Reworked methods for decompressing data so tree-shaking can remove if it is unused.
+
 ## 0.3.0
 
 ### Minor Changes
